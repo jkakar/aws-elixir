@@ -1,6 +1,8 @@
 defmodule AWS.Request do
   alias AWS.Request.Internal
   alias AWS.Util
+  alias AWS.Client
+  alias AWS.Client.Provider
 
   @doc """
   Generate headers with an AWS signature version 4 for the specified request.
@@ -14,6 +16,8 @@ defmodule AWS.Request do
   using the specified time.
   """
   def sign_v4(client, now, method, url, headers, body) do
+    client = refresh_client(client)
+
     {:ok, long_date} = Timex.DateFormat.format(now, "{YYYY}{0M}{0D}T{0h24}{0m}{0s}Z")
     {:ok, short_date} = Timex.DateFormat.format(now, "{YYYY}{0M}{0D}")
     headers = Internal.add_date_header(headers, long_date)
@@ -31,6 +35,17 @@ defmodule AWS.Request do
                                            credential_scope, signed_headers,
                                            signature)
     Internal.add_authorization_header(headers, authorization)
+  end
+
+  defp refresh_client(%Client{expires_at: nil} = client), do: client
+  defp refresh_client(%Client{expires_at: exp} = client) do
+    now = Timex.Date.now |> Timex.Date.subtract(Timex.Time.to_timestamp(5, :mins))
+    case Timex.Date.compare(exp, now) do
+      1 ->
+        Provider.get_client(client)
+      _ ->
+        client
+    end
   end
 end
 
