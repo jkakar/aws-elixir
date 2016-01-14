@@ -287,7 +287,7 @@ defmodule AWS.Lambda do
   This operation requires permission for the `lambda:InvokeFunction` action.
   """
   def invoke_async(client, function_name, input, options \\ []) do
-    url = "/2014-11-13/functions/#{URI.encode(function_name)}/invoke-async/"
+    url = "/2014-11-13/functions/#{URI.encode(function_name)}/invoke-async"
     headers = []
     request(client, :post, url, headers, input, options, 202)
   end
